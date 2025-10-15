@@ -16,7 +16,7 @@ namespace SofaUnity
         public GameObject m_pointC = null;
 
         [SerializeField]
-        private Vector3 m_cutPointA = new Vector3(0, 0, 0);
+        private Vector3 m_cutPointA = new Vector3(0, 0, 0) ;
         [SerializeField]
         private Vector3 m_cutPointB = new Vector3(1, 0, 0);
         [SerializeField]
