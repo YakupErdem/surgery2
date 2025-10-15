@@ -16,11 +16,12 @@ public class Feedback : MonoBehaviour
     
     private void Update()
     {
-        if(!isOnLiver && !canFeedBack) return;
+        if(!isOnLiver || !canFeedBack) return;
         if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
         {
             var text= Instantiate(feedbackText, feedBackTextParent);
             text.GetComponent<TMP_Text>().text = "Don't cut healthy part!";
+            text.transform.position = new Vector3(-text.transform.position.x, text.transform.position.y, text.transform.position.z);
         }
         if (scalpel.transform.position.y < maxDeepY)
         {

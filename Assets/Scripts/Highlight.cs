@@ -12,6 +12,7 @@ public class Highlight : MonoBehaviour
     void Start()
     {
         rend = GetComponent<Renderer>();
+        rend.material.color = Color.red;
         if (rend != null)
             originalColor = rend.material.color;
     }

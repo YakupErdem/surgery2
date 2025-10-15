@@ -8,19 +8,20 @@ public class FinishCutting : MonoBehaviour
     public GameObject finishCutText;
     public void CheckForFinish()
     {
-        if (!FindObjectOfType<Highlight>())
-        {
-            StartCoroutine(Finish());    
-        }
+        StartCoroutine(Finish());    
     }
 
     private IEnumerator Finish()
     {
-        FindObjectOfType<ScalpelMouseController3D>().scalpel.gameObject.SetActive(false);
-        FindObjectOfType<ScalpelMouseController3D>().enabled = false;
-        tumor.GetComponent<SmoothRise>().StartRise();
-        yield return new WaitForSeconds(2);
-        finishCutText.SetActive(true);
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(0.1f);
+        if (!FindObjectOfType<Highlight>())
+        {
+            FindObjectOfType<ScalpelMouseController3D>().scalpel.gameObject.SetActive(false);
+            FindObjectOfType<ScalpelMouseController3D>().enabled = false;
+            tumor.GetComponent<SmoothRise>().StartRise();
+            yield return new WaitForSeconds(2);
+            finishCutText.SetActive(true);
+            yield return new WaitForSeconds(2);
+        }
     }
 }
