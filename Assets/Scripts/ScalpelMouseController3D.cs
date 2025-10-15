@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 public class ScalpelMouseController3D : MonoBehaviour
 {
     [Header("Targets")]
-    [SerializeField] private Transform scalpel;        // boşsa = this.transform
+    [SerializeField] public Transform scalpel;        // boşsa = this.transform
     [SerializeField] private Camera cam;               // gerçek oyun kamerası
     [SerializeField] private Transform referencePlane; // SurgeryPlane / LiverSurface (boş obje de olur)
 
@@ -100,7 +100,7 @@ public class ScalpelMouseController3D : MonoBehaviour
     void ApplyY(float dt)
     {
         bool downCut = Input.GetMouseButton(0);   // sol tık -> aşağı in
-        bool forceUp = Input.GetMouseButton(2);   // orta tık -> yukarı çık
+        bool forceUp = Input.GetMouseButton(1);   
 
         float targetY;
         float speed;
@@ -113,7 +113,7 @@ public class ScalpelMouseController3D : MonoBehaviour
         else if (forceUp)
         {
             targetY = maxY;
-            speed = ascendSpeed * 2f; // istersen daha hızlı çıkması için çarpan
+            speed = ascendSpeed; // istersen daha hızlı çıkması için çarpan
         }
         else
         {

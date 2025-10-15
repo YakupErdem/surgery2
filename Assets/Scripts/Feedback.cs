@@ -7,8 +7,8 @@ using UnityEngine;
 public class Feedback : MonoBehaviour
 {
     public GameObject scalpel;
-    public float maxDeepY;
-    public bool isOnLiver;
+    public float maxDeepY, cutDeep;
+    public bool isOnLiver, isOnHighlight;
     public GameObject feedbackText;
     public Transform feedBackTextParent;
     public float feedbackCooldown = 0.5f;
@@ -17,10 +17,19 @@ public class Feedback : MonoBehaviour
     private void Update()
     {
         if(!isOnLiver && !canFeedBack) return;
+        if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
+        {
+            var text= Instantiate(feedbackText, feedBackTextParent);
+            text.GetComponent<TMP_Text>().text = "Don't cut healthy part!";
+        }
         if (scalpel.transform.position.y < maxDeepY)
         {
             var text= Instantiate(feedbackText, feedBackTextParent);
             text.GetComponent<TMP_Text>().text = "Too DEEP!";
+            StartCoroutine(CoolDown());
+        }
+        else if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
+        {
             StartCoroutine(CoolDown());
         }
     }
