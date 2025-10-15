@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_01_SimpleLiver.unity
+    guid: db9463140cc77c74db038ad5c158df2c
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_02_Caduceus.unity
+    guid: 6d248971f32b51d4da78b6daedaf8d76
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_03_SimpleObjectsCollision.unity
+    guid: 45e8b9512ed8c3c4682a51b05eaa99e3
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_04_DeformableObjectsCollision.unity
+    guid: 79230671776570548b0fb4436a1014e0
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_05_SoftTissue.unity
+    guid: 26053b6929f7783478f424bb223d33b3
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_06_BeamModels.unity
+    guid: a5eb2a50097ebd146918c1e0c5ace74e
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_07_SPHFluid.unity
+    guid: 66770e37a44fb9d4cb70bcfb7184e649
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_08_SPHFluidParticles.unity
+    guid: 1a307460914cf2949b4ce3d2dba7806e
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_09_HeatDiffusion.unity
+    guid: 7295e6a77c3f50c4794b243cab9c5d3d
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Examples/Example_10_VonMisesDisplay.unity
+    guid: 11612418809be0d4ba4e3a7d4e0ef28c
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_01_LiverInteraction.unity
+    guid: 19932f76f3108c140a35271e528ab9a1
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_02_LiverInteraction-HD.unity
+    guid: 0a3953f89ce788b44ae6099c22b58f81
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_03_CubeCarving.unity
+    guid: 6827b735f13279d42b05a74f7dceb900
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_04_CubeAdvancedCarving.unity
+    guid: 90c77a9ea85d42047b353be46b48dc6e
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_05_LiverCut.unity
+    guid: d1b0b16239625d942933df3fddde6e5d
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_06_LiverCut-CUDA.unity
+    guid: 250a25bf917cca646a0cd62a263d50e7
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_07_MeshController.unity
+    guid: bcce254e4e6bdfc4b82d08cb4a743f92
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Interaction/Demo_08_MouseTissuePicking.unity
+    guid: f243866bb11b322499a19a549fee688d
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Python/LiverPyhon.unity
+    guid: 9a7904dac82f05d4f9605f3c707c4196
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Python/LiverPyhonController.unity
+    guid: 8db4c22f079bd0547bd7eb479835be02
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Tearing/Demo_01_TearingGravity.unity
+    guid: d76fc1b26f0c7424dacb83d79a029977
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Tearing/Demo_02_TearingInteraction.unity
+    guid: 972c1ffeeeeb05e44b1f8964f9974832
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/Virtual Capsule Endoscopy/Scenes/Capsule_simulation_constraint.unity
+    guid: d0139e72f4074ea4a8f6a9fd807a78ff
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/Virtual Capsule Endoscopy/Scenes/Capsule_simulation_final.unity
+    guid: ecc1a14ddb6feef48af5d6f245a77920
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/Virtual Capsule Endoscopy/Scenes/Capsule_simulation_narrow_path.unity
+    guid: 6da3f0502692f3548bc8a93a4c0e99b3
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/Virtual Capsule Endoscopy/Scenes/Capsule_simulation_narrow_path_constraint.unity
+    guid: 1b8405f811fceef489b0e831e6c5a6da
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/BeamAdapter/BeamDemo_01_Texture.unity
+    guid: fb0854aa9ae7c4c44a1748b171057ed5
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/BeamAdapter/BeamDemo_02_KV1.unity
+    guid: c5117b191718ffa40b7939e6ea62db8b
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/BeamAdapter/BeamDemo_03_Ureteroscopy.unity
+    guid: 71d894d12a0bc2a43b2c1721bed4bc5d
+  - enabled: 1
+    path: Assets/SofaUnity/Scenes/Demos/Endoscopy/BeamAdapter/BeamDemo_04_3instruments.unity
+    guid: 78c1283eb792cee4da2749e291edb4cf
+  m_configObjects: {}
