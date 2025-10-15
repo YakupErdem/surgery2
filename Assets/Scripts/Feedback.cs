@@ -9,7 +9,7 @@ public class Feedback : MonoBehaviour
     public GameObject scalpel;
     public float maxDeepY, cutDeep;
     public bool isOnLiver, isOnHighlight;
-    public GameObject feedbackText;
+    public GameObject feedbackTextDeep, feedbackTextHighlight;
     public Transform feedBackTextParent;
     public float feedbackCooldown = 0.5f;
     private bool canFeedBack = true;
@@ -19,13 +19,12 @@ public class Feedback : MonoBehaviour
         if(!isOnLiver || !canFeedBack) return;
         if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
         {
-            var text= Instantiate(feedbackText, feedBackTextParent);
+            var text= Instantiate(feedbackTextHighlight, feedBackTextParent);
             text.GetComponent<TMP_Text>().text = "Don't cut healthy part!";
-            text.transform.position = new Vector3(-text.transform.position.x, text.transform.position.y, text.transform.position.z);
         }
         if (scalpel.transform.position.y < maxDeepY)
         {
-            var text= Instantiate(feedbackText, feedBackTextParent);
+            var text= Instantiate(feedbackTextDeep, feedBackTextParent);
             text.GetComponent<TMP_Text>().text = "Too DEEP!";
             StartCoroutine(CoolDown());
         }
