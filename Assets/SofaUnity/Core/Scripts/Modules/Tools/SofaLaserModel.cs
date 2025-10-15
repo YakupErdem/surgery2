@@ -282,5 +282,40 @@ namespace SofaUnity
             }
 
         }
+        
+        [Header("Gizmos")]
+        [SerializeField] private bool m_drawRayGizmos = true;
+        [SerializeField] private Color m_rayGizmoColor = new Color(0f, 1f, 0.2f, 0.9f);
+        [SerializeField] private float m_endPointSphereRadius = 0.01f;
+        [SerializeField] private bool m_showDistanceLabel = true;
+
+        // Seçiliyken çizmek istersen bunu kullan:
+        private void OnDrawGizmosSelected()
+        {
+            DrawRayGizmos();
+        }
+
+        // Her zaman çizmek istersen bunu da açabilirsin:
+        // private void OnDrawGizmos() => DrawRayGizmos();
+
+        private void DrawRayGizmos()
+        {
+            if (!m_drawRayGizmos) return;
+
+            // m_origin / m_direction bu sınıfta zaten set ediliyor (UpdateImpl içinde)
+            // Ama Edit Mode'da değerler boş kalmasın diye fallback verelim:
+            Vector3 origin = (m_origin == Vector3.zero) ? transform.position : m_origin;
+            Vector3 dir    = (m_direction == Vector3.zero) ? transform.forward   : m_direction.normalized;
+
+            // m_length SofaRayCaster'dan geliyor. Yoksa 1f fallback ver.
+            float length = (m_length > 0f) ? m_length : 1f;
+
+            Vector3 end = origin + dir * length;
+
+            // Çiz
+            Gizmos.color = m_rayGizmoColor;
+            Gizmos.DrawLine(origin, end);
+            Gizmos.DrawSphere(end, m_endPointSphereRadius);
+        }
     }
 }
