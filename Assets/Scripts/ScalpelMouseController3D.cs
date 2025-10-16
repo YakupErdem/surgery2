@@ -20,11 +20,21 @@ public class ScalpelMouseController3D : MonoBehaviour
     [SerializeField] private Vector2 localAreaCenterXZ = Vector2.zero;
     [SerializeField] private Vector2 localAreaSizeXZ   = new Vector2(0.20f, 0.20f);
 
-    [Header("Y Motion")]
+    [Header("Y Motion (Common)")]
     [SerializeField] private float maxY = 0.06f;
     [SerializeField] private float minY = -0.01f;
-    [SerializeField] private float descendSpeed = 0.05f; // m/s
-    [SerializeField] private float ascendSpeed  = 0.08f; // m/s
+
+    [Header("Y by Mouse (NEW)")]
+    [Tooltip("Açıksa Y ekseni mouse dikeyine göre (viewport Y) kontrol edilir.")]
+    [SerializeField] public bool yFollowMouse = true;
+    [Tooltip("Viewport Y aralığı (0=ekran altı, 1=ekran üstü) -> minY..maxY eşlemesi")]
+    [SerializeField] private Vector2 viewportYRange = new Vector2(0.15f, 0.85f);
+    [Tooltip("Y ekseni için yumuşatma (0=anlık, 10=çok yumuşak)")]
+    [SerializeField] private float yLerpSpeed = 12f;
+
+    [Header("Y by Buttons (Legacy)")]
+    [SerializeField] private float descendSpeed = 0.05f; // m/s (Mouse1)
+    [SerializeField] private float ascendSpeed  = 0.08f; // m/s (Mouse2)
 
     [Header("Gizmos/Debug")]
     [SerializeField] private bool drawGizmos = true;
@@ -46,7 +56,7 @@ public class ScalpelMouseController3D : MonoBehaviour
 
         if (ignoreWhenPointerOverUI && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
-            ApplyY(Time.deltaTime);
+            ApplyY(Time.deltaTime); // UI üstünde iken Y mantığını yine uygula
             return;
         }
 
@@ -62,7 +72,7 @@ public class ScalpelMouseController3D : MonoBehaviour
             {
                 if (logOnceIfNoHit && !_warnedNoHit)
                 {
-                    Debug.LogWarning("[ScalpelMouseSnapRobust] Ray plane'e çarpmadı. Kamera doğrultunu ve referencePlane konum/rotasyonunu kontrol et.");
+                    Debug.LogWarning("[ScalpelMouseController3D] Ray plane'e çarpmadı. Kamera/plane konum/rotasyonu kontrol et.");
                     _warnedNoHit = true;
                 }
                 ApplyY(Time.deltaTime);
@@ -78,7 +88,7 @@ public class ScalpelMouseController3D : MonoBehaviour
             local.x >= localAreaCenterXZ.x - half.x && local.x <= localAreaCenterXZ.x + half.x &&
             local.z >= localAreaCenterXZ.y - half.y && local.z <= localAreaCenterXZ.y + half.y;
 
-        // Düzlem üzerinde kal
+        // Düzlem üzerinde kal (XZ plane'inde)
         local.y = 0f;
 
         // İçerideyse birebir snap, dışarıdaysa clamp
@@ -93,14 +103,38 @@ public class ScalpelMouseController3D : MonoBehaviour
         // XZ anında uygula
         scalpel.position = new Vector3(snappedWorld.x, scalpel.position.y, snappedWorld.z);
 
-        // Y hareketi
-        ApplyY(Time.deltaTime);
+        // Y hareketi (mouse veya legacy)
+        if (yFollowMouse)
+            ApplyYFromMouse(Time.deltaTime);
+        else
+            ApplyY(Time.deltaTime);
     }
 
+    // --- Y: Mouse dikeyine göre ---
+    void ApplyYFromMouse(float dt)
+    {
+        // Viewport Y: çözünürlükten bağımsız
+        float vY = cam.ScreenToViewportPoint(Input.mousePosition).y;
+
+        // Kullanıcının belirlediği viewport bandını minY..maxY'a haritala
+        float t = Mathf.InverseLerp(viewportYRange.x, viewportYRange.y, vY);
+        float targetY = Mathf.Lerp(minY, maxY, Mathf.Clamp01(t));
+
+        // Yumuşatma (exponential lerp benzeri)
+        float k = 1f - Mathf.Exp(-yLerpSpeed * dt);
+        _curY = Mathf.Lerp(_curY, targetY, k);
+
+        _curY = Mathf.Clamp(_curY, Mathf.Min(minY, maxY), Mathf.Max(minY, maxY));
+
+        var p = scalpel.position;
+        scalpel.position = new Vector3(p.x, _curY, p.z);
+    }
+
+    // --- Y: Eski buton davranışı ---
     void ApplyY(float dt)
     {
         bool downCut = Input.GetMouseButton(0);   // sol tık -> aşağı in
-        bool forceUp = Input.GetMouseButton(1);   
+        bool upLift  = Input.GetMouseButton(2) || Input.GetMouseButton(1); // orta/sağ tık -> yukarı çık (ikisini de kabul)
 
         float targetY;
         float speed;
@@ -110,18 +144,16 @@ public class ScalpelMouseController3D : MonoBehaviour
             targetY = minY;
             speed = descendSpeed;
         }
-        else if (forceUp)
+        else if (upLift)
         {
             targetY = maxY;
-            speed = ascendSpeed; // istersen daha hızlı çıkması için çarpan
+            speed = ascendSpeed;
         }
         else
         {
-            // mouse bırakıldığında sabit kalsın
-            targetY = _curY;
+            targetY = _curY; // sabit
             speed = 0f;
         }
-
 
         _curY = MoveTowards(_curY, targetY, speed * dt);
         _curY = Mathf.Clamp(_curY, Mathf.Min(minY, maxY), Mathf.Max(minY, maxY));
@@ -154,8 +186,6 @@ public class ScalpelMouseController3D : MonoBehaviour
     bool TryRaycastReferencePlane(Ray ray, out Vector3 hitPoint)
     {
         hitPoint = default;
-
-        // Plane normalini dünya uzayına çevir (eğimli plane için şart)
         Vector3 planeNormal = referencePlane.TransformDirection(Vector3.up);
         Plane plane = new Plane(planeNormal, referencePlane.position);
 
