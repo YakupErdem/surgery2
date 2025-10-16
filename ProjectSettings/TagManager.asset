@@ -6,6 +6,7 @@ TagManager:
   tags:
   - TumorMargin
   - Scalpel
+  - Needle
   layers:
   - Default
   - TransparentFX
