@@ -1,12 +1,13 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class NeedleMouseController : MonoBehaviour
 {
     [Header("Targets")]
-    [SerializeField] public Transform needle;         // boşsa = this.transform
-    [SerializeField] private Camera cam;              // gerçek oyun kamerası
-    [SerializeField] private Transform referencePlane; // SurgeryPlane / LiverSurface (boş obje de olur)
+    [SerializeField] public Transform needle;          // boşsa = this.transform
+    [SerializeField] private Camera cam;               // gerçek oyun kamerası
+    [SerializeField] private Transform referencePlane; // SurgeryPlane / LiverSurface
 
     [Header("Input")]
     [Tooltip("UI üstündeyken mouse takibini kapat")]
@@ -21,111 +22,120 @@ public class NeedleMouseController : MonoBehaviour
     [SerializeField] private Vector2 localAreaSizeXZ   = new Vector2(0.20f, 0.20f);
 
     [Header("Press Conditions")]
-    [Tooltip("Mouse0'a basınca sadece bu true ise basma animasyonu başlar")]
-    [SerializeField]
-    public FeedbackNeedle feedbackNeedle;
+    [SerializeField] public FeedbackNeedle feedbackNeedle; // isOnNeedleArea bilgisini buradan alıyoruz
 
     [Header("Phase 1: Needle world-Y descend")]
     [SerializeField] private float targetNeedleWorldY = 0.0f; // iğnenin ineceği dünya Y
-    [SerializeField] private float needleDownSpeed = 2.0f;    // m/sn (smooth Lerp katsayısı gibi kullanılacak)
+    [SerializeField] private float needleDownSpeed = 2.0f;    // sn^-1 (smooth katsayısı)
 
-    [Header("Phase 2: Pressed part local-Y descend")]
+    [Header("Phase 2: Pressed part local-Z descend (NEW)")]
     [SerializeField] private Transform pressedPart;           // iğnenin basılan kısmı (child)
-    [SerializeField] private float pressedLocalYTarget = -0.003f; // local y’de hedef
-    [SerializeField] private float pressedDownSpeed = 3.0f;       // sn^-1 (smooth)
+    [SerializeField] private float pressedLocalZTarget = -0.003f; // local Z’de hedef
+    [SerializeField] private float pressedForwardSpeed = 3.0f;     // sn^-1 (smooth)
 
     [Header("Gizmos/Debug")]
     [SerializeField] private bool drawGizmos = true;
     [SerializeField] private bool logOnceIfNoHit = true;
 
+    public GameObject finishNeedleText;
+
     // ---- internal ----
     private bool _pressing = false;       // aktif basma animasyonu var mı
     private bool _phase1Done = false;     // iğne dünya Y hedefe indi mi
-    private float _cachedY;               // takip sırasında korunacak sabit Y
+    private float _cachedY;               // takip sırasında sabit tutulacak Y
     private bool  _warnedNoHit;
+    private bool _canMove = true;
 
     void Awake()
     {
         if (!needle) needle = transform;
         if (!cam) cam = Camera.main;
-        _cachedY = needle.position.y; // başlangıç Y değerini sabitliyoruz
+        _cachedY = needle.position.y; // başlangıç Y’yi sabitliyoruz
     }
 
     void Update()
     {
+        if(!_canMove) return;
         if (!needle || !cam || !referencePlane) return;
 
-        // UI üstündeyken input yok say (opsiyonel)
         bool pointerOverUI = ignoreWhenPointerOverUI && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        // Basma tetikleyicisi: Mouse0
-        if (Input.GetMouseButtonDown(0) && feedbackNeedle.isOnNeedleArea && !_pressing)
+        // Mouse0 basma tetikleyicisi
+        if (Input.GetMouseButtonDown(0))
         {
-            // Basma animasyonını başlat
-            _pressing = true;
-            _phase1Done = false;
+            if (feedbackNeedle != null && feedbackNeedle.isOnNeedleArea && !_pressing)
+            {
+                _pressing = true;
+                _phase1Done = false;
+            }
+            else if (feedbackNeedle != null && !feedbackNeedle.isOnNeedleArea)
+            {
+                feedbackNeedle.NeedleFeedback();
+            }
         }
 
-        if (Input.GetMouseButtonDown(0) && !feedbackNeedle.isOnNeedleArea)
-        {
-            feedbackNeedle.NeedleFeedback();
-        }
-        
-        // XZ takip (press yoksa)
+        // Press yoksa XZ takibi (Y sabit)
         if (!_pressing && !pointerOverUI)
         {
             FollowXZOnPlane();
-            // Y’yi sabit tut
             var p = needle.position;
             p.y = _cachedY;
             needle.position = p;
         }
 
-        // Basma akışı
+        // Press akışı
         if (_pressing)
         {
             if (!_phase1Done)
             {
-                // Faz 1: iğne dünya Y’de targetNeedleWorldY’ye insin (XZ kilitli)
+                // Faz 1: iğne dünya Y’de hedefe insin
                 SmoothNeedleWorldY(targetNeedleWorldY, needleDownSpeed);
-                // Hedefe yaklaştı mı?
+
                 if (Mathf.Abs(needle.position.y - targetNeedleWorldY) < 0.0005f)
                 {
-                    // sabitle
                     var p = needle.position;
                     p.y = targetNeedleWorldY;
                     needle.position = p;
-
                     _phase1Done = true;
                 }
             }
             else
             {
-                // Faz 2: pressedPart local Y’si pressedLocalYTarget’a insin
+                // Faz 2: pressedPart local Z’si hedefe insin
                 if (pressedPart != null)
                 {
                     Vector3 lp = pressedPart.localPosition;
-                    float k = 1f - Mathf.Exp(-pressedDownSpeed * Time.deltaTime);
-                    lp.y = Mathf.Lerp(lp.y, pressedLocalYTarget, k);
+                    float k = 1f - Mathf.Exp(-pressedForwardSpeed * Time.deltaTime);
+                    lp.z = Mathf.Lerp(lp.z, pressedLocalZTarget, k);
                     pressedPart.localPosition = lp;
 
-                    if (Mathf.Abs(lp.y - pressedLocalYTarget) < 0.0002f)
+                    if (Mathf.Abs(lp.z - pressedLocalZTarget) < 0.0002f)
                     {
-                        lp.y = pressedLocalYTarget;
+                        lp.z = pressedLocalZTarget;
                         pressedPart.localPosition = lp;
-                        // tüm akış bitti
+                        // akış bitti
                         _pressing = false;
-                        _cachedY = needle.position.y; // yeni Y’yi cache’leyelim
+                        _cachedY = needle.position.y; // yeni Y’yi cache’le
+                        StartCoroutine(Finish());
                     }
                 }
                 else
                 {
-                    // pressedPart atanmadıysa faz2 atlanır
+                    // pressedPart yoksa faz2 atlanır
                     _pressing = false;
                     _cachedY = needle.position.y;
                 }
             }
         }
+    }
+
+    private IEnumerator Finish()
+    {
+        _canMove  = false;
+        needle.gameObject.GetComponent<SmoothRise>().StartRise();
+        yield return new WaitForSeconds(2);
+        needle.gameObject.SetActive(false);
+        finishNeedleText.SetActive(true);
     }
 
     // --- XZ takibi (Y sabit) ---
@@ -154,14 +164,14 @@ public class NeedleMouseController : MonoBehaviour
         local.z = Mathf.Clamp(local.z, localAreaCenterXZ.y - half.y, localAreaCenterXZ.y + half.y);
 
         Vector3 snappedWorld = referencePlane.TransformPoint(local);
-        needle.position = new Vector3(snappedWorld.x, needle.position.y, snappedWorld.z); // Y’yi değiştirme
+        needle.position = new Vector3(snappedWorld.x, needle.position.y, snappedWorld.z); // Y sabit
     }
 
-    // --- Dünya Y’yi smooth indir (lerp-easing) ---
+    // --- Dünya Y’yi smooth indir ---
     void SmoothNeedleWorldY(float targetY, float speed)
     {
         var p = needle.position;
-        float k = 1f - Mathf.Exp(-speed * Time.deltaTime); // frame-rate bağımsız yumuşatma
+        float k = 1f - Mathf.Exp(-speed * Time.deltaTime);
         p.y = Mathf.Lerp(p.y, targetY, k);
         needle.position = p;
     }
