@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class FeedbackNeedle : MonoBehaviour
 {
+    public static bool IsNeedleInjected;
+    
     public bool isOnNeedleArea;
     public GameObject feedbackTextNeedle;
     public Transform feedBackTextParent;

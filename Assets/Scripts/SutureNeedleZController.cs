@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 public class SutureNeedleZController : MonoBehaviour
 {
     [Header("Targets")]
-    [SerializeField] private Transform needle;           // boşsa = this.transform
+    [SerializeField] public Transform needle;           // boşsa = this.transform
     [SerializeField] private Camera cam;                 // raycast kamerası
     [SerializeField] private Transform referencePlane;   // local eksen referansı (local Z boyunca hareket)
 
@@ -15,7 +15,6 @@ public class SutureNeedleZController : MonoBehaviour
     [SerializeField] private bool ignoreWhenPointerOverUI = true;
     [SerializeField] private bool preferColliderHit = true;
     [SerializeField] private float rayMaxDistance = 5f;
-
     
     [Header("Z Motion (local on referencePlane)")]
     [SerializeField] private float minLocalZ = -0.10f;
@@ -39,6 +38,8 @@ public class SutureNeedleZController : MonoBehaviour
     [SerializeField] private float dropSpeed = 3.0f;   // sn^-1 (smooth)
     [SerializeField] private float riseSpeed = 3.0f;   // sn^-1 (smooth)
     [SerializeField] private float ySnapEpsilon = 0.0004f;
+
+    public FeedbackStitch feedbackStitch;
 
     [Header("Events")]
     public UnityEvent onStitchTooClose;                 // Inspector’dan uyarı UI/metod bağla
@@ -95,27 +96,35 @@ public class SutureNeedleZController : MonoBehaviour
     void Update()
     {
         if (_busyAnimating) return;
+        if (!needle || !cam || !referencePlane) return;
 
-        // UI üstündeyken inputu yok say
-        if (ignoreWhenPointerOverUI && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            return;
+        bool pointerOverUI = ignoreWhenPointerOverUI 
+                             && EventSystem.current != null 
+                             && EventSystem.current.IsPointerOverGameObject();
 
-        // 1) Mouse → plane kesişimi → local Z çıkar
-        if (TryGetLocalZFromMouse(out float zHit))
+        // 1) Mouse → plane → Z takibi (UI üstündeyken sadece hareket isterse açılsın)
+        if (!pointerOverUI) // hareketi de kapatmak istersen bu şartı kaldır ve üstte return bırak
         {
-            float targetZ = Mathf.Clamp(zHit, minLocalZ, maxLocalZ);
-            float k = 1f - Mathf.Exp(-zLerpSpeed * Time.deltaTime);
-            _currentLocalZ = Mathf.Lerp(_currentLocalZ, targetZ, k);
-            ApplyNeedlePosition(keepY:true);
+            if (TryGetLocalZFromMouse(out float zHit))
+            {
+                float targetZ = Mathf.Clamp(zHit, minLocalZ, maxLocalZ);
+                float k = 1f - Mathf.Exp(-zLerpSpeed * Time.deltaTime);
+                _currentLocalZ = Mathf.Lerp(_currentLocalZ, targetZ, k);
+                ApplyNeedlePosition(keepY: true);
+            }
         }
 
-        // 2) Clickler
-        if (Input.GetMouseButtonDown(0))
-            StartCoroutine(DropPlaceRiseFlow());
+        // 2) Clickler (UI ÜSTÜNDEYKEN ASLA TETİKLENMEZ)
+        if (!pointerOverUI)
+        {
+            if (Input.GetMouseButtonDown(0))
+                StartCoroutine(DropPlaceRiseFlow());
 
-        if (Input.GetMouseButtonDown(1))
-            RemoveLastStitch();
+            if (Input.GetMouseButtonDown(1))
+                RemoveLastStitch();
+        }
     }
+
 
     IEnumerator DropPlaceRiseFlow()
     {
@@ -163,6 +172,11 @@ public class SutureNeedleZController : MonoBehaviour
         _stitches.Add(mark);
         onStitchPlaced?.Invoke();
 
+        if (!FeedbackNeedle.IsNeedleInjected)
+        {
+            feedbackStitch.StitchNoInjection();
+        }
+        
         // Yakınlık kontrolü
         for (int i = 0; i < _stitches.Count - 1; i++)
         {
@@ -182,8 +196,19 @@ public class SutureNeedleZController : MonoBehaviour
 
         var last = _stitches[n - 1];
         _stitches.RemoveAt(n - 1);
-        if (last) Destroy(last.gameObject);
+        if (last)
+        {
+            StartCoroutine(RemoveStitch(last.gameObject));
+        }
+    }
 
+    IEnumerator RemoveStitch(GameObject stitch)
+    {
+        stitch.transform.localScale =
+            new Vector3(stitch.transform.localScale.x, 0.002711335f, stitch.transform.localScale.z);
+        stitch.GetComponent<SmoothRise>().StartRise();
+        yield return new WaitForSeconds(1.8f);
+        Destroy(stitch.gameObject);
         onStitchRemoved?.Invoke();
     }
 

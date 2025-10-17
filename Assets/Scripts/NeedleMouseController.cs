@@ -54,80 +54,83 @@ public class NeedleMouseController : MonoBehaviour
     }
 
     void Update()
+{
+    if (!_canMove) return;
+    if (!needle || !cam || !referencePlane) return;
+
+    // >>> UI üstündeyken HER ŞEYİ kilitle (tıklama + hareket + anim)
+    bool pointerOverUI = ignoreWhenPointerOverUI 
+                         && EventSystem.current != null 
+                         && EventSystem.current.IsPointerOverGameObject();
+    if (pointerOverUI)
+        return;
+    // <<<
+
+    // Mouse0 basma tetikleyicisi
+    if (Input.GetMouseButtonDown(0))
     {
-        if(!_canMove) return;
-        if (!needle || !cam || !referencePlane) return;
-
-        bool pointerOverUI = ignoreWhenPointerOverUI && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-
-        // Mouse0 basma tetikleyicisi
-        if (Input.GetMouseButtonDown(0))
+        if (feedbackNeedle != null && feedbackNeedle.isOnNeedleArea && !_pressing)
         {
-            if (feedbackNeedle != null && feedbackNeedle.isOnNeedleArea && !_pressing)
+            _pressing = true;
+            _phase1Done = false;
+        }
+        else if (feedbackNeedle != null && !feedbackNeedle.isOnNeedleArea)
+        {
+            feedbackNeedle.NeedleFeedback();
+        }
+    }
+
+    // Press yoksa XZ takibi (Y sabit)
+    if (!_pressing)
+    {
+        FollowXZOnPlane();
+        var p = needle.position;
+        p.y = _cachedY;
+        needle.position = p;
+    }
+
+    // Press akışı
+    if (_pressing)
+    {
+        if (!_phase1Done)
+        {
+            SmoothNeedleWorldY(targetNeedleWorldY, needleDownSpeed);
+
+            if (Mathf.Abs(needle.position.y - targetNeedleWorldY) < 0.0005f)
             {
-                _pressing = true;
-                _phase1Done = false;
-            }
-            else if (feedbackNeedle != null && !feedbackNeedle.isOnNeedleArea)
-            {
-                feedbackNeedle.NeedleFeedback();
+                var p = needle.position;
+                p.y = targetNeedleWorldY;
+                needle.position = p;
+                _phase1Done = true;
             }
         }
-
-        // Press yoksa XZ takibi (Y sabit)
-        if (!_pressing && !pointerOverUI)
+        else
         {
-            FollowXZOnPlane();
-            var p = needle.position;
-            p.y = _cachedY;
-            needle.position = p;
-        }
-
-        // Press akışı
-        if (_pressing)
-        {
-            if (!_phase1Done)
+            if (pressedPart != null)
             {
-                // Faz 1: iğne dünya Y’de hedefe insin
-                SmoothNeedleWorldY(targetNeedleWorldY, needleDownSpeed);
+                Vector3 lp = pressedPart.localPosition;
+                float k = 1f - Mathf.Exp(-pressedForwardSpeed * Time.deltaTime);
+                lp.z = Mathf.Lerp(lp.z, pressedLocalZTarget, k);
+                pressedPart.localPosition = lp;
 
-                if (Mathf.Abs(needle.position.y - targetNeedleWorldY) < 0.0005f)
+                if (Mathf.Abs(lp.z - pressedLocalZTarget) < 0.0002f)
                 {
-                    var p = needle.position;
-                    p.y = targetNeedleWorldY;
-                    needle.position = p;
-                    _phase1Done = true;
+                    lp.z = pressedLocalZTarget;
+                    pressedPart.localPosition = lp;
+                    _pressing = false;
+                    _cachedY = needle.position.y;
+                    StartCoroutine(Finish());
                 }
             }
             else
             {
-                // Faz 2: pressedPart local Z’si hedefe insin
-                if (pressedPart != null)
-                {
-                    Vector3 lp = pressedPart.localPosition;
-                    float k = 1f - Mathf.Exp(-pressedForwardSpeed * Time.deltaTime);
-                    lp.z = Mathf.Lerp(lp.z, pressedLocalZTarget, k);
-                    pressedPart.localPosition = lp;
-
-                    if (Mathf.Abs(lp.z - pressedLocalZTarget) < 0.0002f)
-                    {
-                        lp.z = pressedLocalZTarget;
-                        pressedPart.localPosition = lp;
-                        // akış bitti
-                        _pressing = false;
-                        _cachedY = needle.position.y; // yeni Y’yi cache’le
-                        StartCoroutine(Finish());
-                    }
-                }
-                else
-                {
-                    // pressedPart yoksa faz2 atlanır
-                    _pressing = false;
-                    _cachedY = needle.position.y;
-                }
+                _pressing = false;
+                _cachedY = needle.position.y;
             }
         }
     }
+}
+
 
     private IEnumerator Finish()
     {
@@ -136,6 +139,7 @@ public class NeedleMouseController : MonoBehaviour
         yield return new WaitForSeconds(2);
         needle.gameObject.SetActive(false);
         finishNeedleText.SetActive(true);
+        FeedbackNeedle.IsNeedleInjected = true;
     }
 
     // --- XZ takibi (Y sabit) ---

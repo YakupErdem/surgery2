@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1368634824429260637}
   - component: {fileID: 8418225634096451332}
   - component: {fileID: 3388605020862587850}
+  - component: {fileID: 3809697672611934582}
   m_Layer: 0
   m_Name: Stitch
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.0289, y: 0.8401, z: 0}
-  m_LocalScale: {x: 0.011572628, y: 0.011572628, z: 0.003549788}
+  m_LocalScale: {x: 0.011572628, y: 0.03980058, z: 0.003549788}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -105,3 +106,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3809697672611934582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 636391555065533374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c198fe8dd5537ce4fb1e6e241273b61c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetY: 0.9175
+  speed: 2
+  autoStart: 0
