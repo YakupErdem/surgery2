@@ -13,9 +13,11 @@ public class SutureNeedleZController : MonoBehaviour
 
     [Header("Input")]
     [SerializeField] private bool ignoreWhenPointerOverUI = true;
+    [Tooltip("UI üstündeyken tamamen donsun mu? (true: hareket + klik durur, false: sadece klikler blok)")]
+    [SerializeField] private bool freezeWhileOverUI = true;
     [SerializeField] private bool preferColliderHit = true;
     [SerializeField] private float rayMaxDistance = 5f;
-    
+
     [Header("Z Motion (local on referencePlane)")]
     [SerializeField] private float minLocalZ = -0.10f;
     [SerializeField] private float maxLocalZ =  0.10f;
@@ -29,8 +31,18 @@ public class SutureNeedleZController : MonoBehaviour
     [SerializeField] private Transform stitchesParent;
     [Tooltip("Stitch’in X ve Y’si buradan alınır, Z’si kontrolcünün hesapladığı world Z olur")]
     [SerializeField] private Transform stitchAnchorXY;   // örn. dikiş hattının base noktası
-    [Tooltip("Yeni dikiş, diğerlerine bu mesafeden yakınsa uyarı ver")]
+
+    [Header("Spacing Rules")]
+    [Tooltip("true: hedef aralık + tolerans, false: min/max eşik")]
+    [SerializeField] private bool useTargetSpacing = true;
+    [Tooltip("Hedef dikiş aralığı (metre)")]
+    [SerializeField] private float targetSpacing = 0.015f;
+    [Tooltip("Hedef aralık toleransı (±)")]
+    [SerializeField] private float spacingTolerance = 0.003f;
+    [Tooltip("useTargetSpacing=false iken: çok yakın eşik (mevcut minSeparation)")]
     [SerializeField] private float minSeparation = 0.012f;
+    [Tooltip("useTargetSpacing=false iken: çok uzak eşik")]
+    [SerializeField] private float maxSeparation = 0.030f;
 
     [Header("Needle Drop/Raise")]
     [Tooltip("Dikiş atarken iğnenin ineceği DÜNYA Y seviyesi")]
@@ -39,12 +51,17 @@ public class SutureNeedleZController : MonoBehaviour
     [SerializeField] private float riseSpeed = 3.0f;   // sn^-1 (smooth)
     [SerializeField] private float ySnapEpsilon = 0.0004f;
 
-    public FeedbackStitch feedbackStitch;
+    [Header("Feedback (opsiyonel)")]
+    public FeedbackStitch feedbackStitch;              // dış sınıfın uyarılarını kullanıyorsan
+    // İğnenin gerçekten enjekte edilip edilmediğini dışardan takip ediyorsan:
+    // FeedbackNeedle.IsNeedleInjected (static) alanını kullanıyoruz.
 
     [Header("Events")]
-    public UnityEvent onStitchTooClose;                 // Inspector’dan uyarı UI/metod bağla
-    public UnityEvent onStitchPlaced;                   // başarılı place sonrası tetiklenir
-    public UnityEvent onStitchRemoved;                  // remove sonrası tetiklenir
+    public UnityEvent onStitchPlaced;      // başarılı place sonrası
+    public UnityEvent onStitchRemoved;     // remove sonrası
+    public UnityEvent onStitchTooClose;    // minSeparation ihlali
+    public UnityEvent onStitchTooFar;      // maxSeparation ihlali (min/max modunda)
+    public UnityEvent onStitchUneven;      // targetSpacing tolerans dışı (hedef modunda)
 
     [Header("Debug/Gizmos")]
     [SerializeField] private bool drawGizmos = true;
@@ -74,7 +91,7 @@ public class SutureNeedleZController : MonoBehaviour
         }
         if (!stitchAnchorXY)
         {
-            // fallback: needle’ın o anki X/Y’sini anchor varsay
+            // fallback: needle’ın anlık X/Y’si
             stitchAnchorXY = new GameObject("StitchAnchorXY (auto)").transform;
             stitchAnchorXY.position = new Vector3(needle.position.x, needle.position.y, needle.position.z);
             stitchAnchorXY.rotation = referencePlane.rotation;
@@ -98,12 +115,15 @@ public class SutureNeedleZController : MonoBehaviour
         if (_busyAnimating) return;
         if (!needle || !cam || !referencePlane) return;
 
-        bool pointerOverUI = ignoreWhenPointerOverUI 
-                             && EventSystem.current != null 
+        bool pointerOverUI = ignoreWhenPointerOverUI
+                             && EventSystem.current != null
                              && EventSystem.current.IsPointerOverGameObject();
 
-        // 1) Mouse → plane → Z takibi (UI üstündeyken sadece hareket isterse açılsın)
-        if (!pointerOverUI) // hareketi de kapatmak istersen bu şartı kaldır ve üstte return bırak
+        if (pointerOverUI && freezeWhileOverUI)
+            return;
+
+        // 1) Mouse → plane → Z takibi
+        if (!pointerOverUI) // UI üstündeyken sadece klikler bloklansın istiyorsan bu if'i kaldırma
         {
             if (TryGetLocalZFromMouse(out float zHit))
             {
@@ -124,7 +144,6 @@ public class SutureNeedleZController : MonoBehaviour
                 RemoveLastStitch();
         }
     }
-
 
     IEnumerator DropPlaceRiseFlow()
     {
@@ -147,9 +166,7 @@ public class SutureNeedleZController : MonoBehaviour
 
     void PlaceStitchAtWorldZ(float worldZ)
     {
-        Vector3 pos;
-        // X/Y sabit noktadan, Z bu kontrolcüden
-        pos = new Vector3(
+        Vector3 pos = new Vector3(
             stitchAnchorXY.position.x,
             stitchAnchorXY.position.y,
             worldZ
@@ -172,21 +189,56 @@ public class SutureNeedleZController : MonoBehaviour
         _stitches.Add(mark);
         onStitchPlaced?.Invoke();
 
-        if (!FeedbackNeedle.IsNeedleInjected)
-        {
+        // Opsiyonel: iğne gerçekten enjekte edilmediyse uyar
+        if (!FeedbackNeedle.IsNeedleInjected && feedbackStitch != null)
             feedbackStitch.StitchNoInjection();
-        }
-        
-        // Yakınlık kontrolü
-        for (int i = 0; i < _stitches.Count - 1; i++)
+
+        // --- Aralık/Uzaklık kontrolü ---
+
+        // Düz hat üzerinde ilerliyorsan SON komşuyla kıyas en mantıklısı
+        Transform prev = _stitches.Count > 1 ? _stitches[_stitches.Count - 2] : null;
+
+        if (prev != null)
         {
-            float d = Vector3.Distance(pos, _stitches[i].position);
+            float d = Vector3.Distance(pos, prev.position);
+            
             if (d < minSeparation)
-            {
                 onStitchTooClose?.Invoke();
-                // istersen break;
+            else if (d > maxSeparation)
+                onStitchTooFar?.Invoke();
+            
+            if (useTargetSpacing)
+            {
+                // Hedef aralığa yakın mı?
+                float dev = Mathf.Abs(d - targetSpacing);
+                if (dev > spacingTolerance)
+                    onStitchUneven?.Invoke(); // hedefe göre fazla yakın/uzak
+            }
+            else
+            {
+                // Klasik min/max eşik kontrolü
+                
             }
         }
+
+        // Eğer en yakın tüm komşulara göre kontrol etmek istersen:
+        /*
+        float nearest = float.MaxValue;
+        for (int i = 0; i < _stitches.Count - 1; i++)
+        {
+            float di = Vector3.Distance(pos, _stitches[i].position);
+            if (di < nearest) nearest = di;
+        }
+        if (useTargetSpacing)
+        {
+            if (Mathf.Abs(nearest - targetSpacing) > spacingTolerance) onStitchUneven?.Invoke();
+        }
+        else
+        {
+            if (nearest < minSeparation) onStitchTooClose?.Invoke();
+            else if (nearest > maxSeparation) onStitchTooFar?.Invoke();
+        }
+        */
     }
 
     void RemoveLastStitch()
@@ -204,9 +256,13 @@ public class SutureNeedleZController : MonoBehaviour
 
     IEnumerator RemoveStitch(GameObject stitch)
     {
+        // küçük bir görsel efekt (opsiyonel)
         stitch.transform.localScale =
             new Vector3(stitch.transform.localScale.x, 0.002711335f, stitch.transform.localScale.z);
-        stitch.GetComponent<SmoothRise>().StartRise();
+
+        var sr = stitch.GetComponent<SmoothRise>();
+        if (sr) sr.StartRise();
+
         yield return new WaitForSeconds(1.8f);
         Destroy(stitch.gameObject);
         onStitchRemoved?.Invoke();

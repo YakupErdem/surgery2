@@ -15,6 +15,18 @@ public class FeedbackStitch : MonoBehaviour
         text.GetComponent<TMP_Text>().text = "Stitches are close!";
     }
     
+    public void StitchUnEven()
+    {
+        var text= Instantiate(feedbackTextNoInjection, feedbackTransform);
+        text.GetComponent<TMP_Text>().text = "Stitches are not even!";
+    }
+    
+    public void StitchFar()
+    {
+        var text= Instantiate(feedbackTextClose, feedbackTransform);
+        text.GetComponent<TMP_Text>().text = "Stitches are so far";
+    }
+    
     public void CheckWin()
     {
         if (FindFirstObjectByType<SutureNeedleZController>().Stitches.Count >= 4)
