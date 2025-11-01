@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class FeedbackStitch : MonoBehaviour
 {
-    public GameObject feedbackTextClose, feedbackTextNoInjection;
+    public GameObject feedbackTextClose, feedbackTextNoInjection, feedbackNotEven;
     public Transform feedbackTransform;
     public GameObject endText;
 
@@ -17,8 +17,14 @@ public class FeedbackStitch : MonoBehaviour
     
     public void StitchUnEven()
     {
-        var text= Instantiate(feedbackTextNoInjection, feedbackTransform);
+        var text= Instantiate(feedbackNotEven, feedbackTransform);
         text.GetComponent<TMP_Text>().text = "Stitches are not even!";
+    }
+    
+    public void StitchFailed()
+    {
+        var text= Instantiate(feedbackNotEven, feedbackTransform);
+        text.GetComponent<TMP_Text>().text = "Failed to stitch!";
     }
     
     public void StitchFar()

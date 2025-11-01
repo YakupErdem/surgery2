@@ -21,7 +21,8 @@ public class FinishCutting : MonoBehaviour
             tumor.GetComponent<SmoothRise>().StartRise();
             yield return new WaitForSeconds(2);
             finishCutText.SetActive(true);
-            yield return new WaitForSeconds(2);
+            yield return new WaitForSeconds(4);
+            FindObjectOfType<SceneChanger>().ChangeScene("SurgerySimulationStitch");
         }
     }
 }
