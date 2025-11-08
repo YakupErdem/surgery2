@@ -140,6 +140,9 @@ public class NeedleMouseController : MonoBehaviour
         needle.gameObject.SetActive(false);
         finishNeedleText.SetActive(true);
         FeedbackNeedle.IsNeedleInjected = true;
+        yield return new WaitForSeconds(2);
+        FindFirstObjectByType<MenuChanger>().DestroyPainKillerInjectionMenu();
+        FindFirstObjectByType<MenuChanger>().OpenMenu(1);
     }
 
     // --- XZ takibi (Y sabit) ---

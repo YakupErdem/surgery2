@@ -6,6 +6,7 @@ using UnityEngine;
 public class MenuChanger : MonoBehaviour
 {
     public GameObject[] menus;
+    public GameObject painKillerInjectionLayoutMenu;
 
     private void Start()
     {
@@ -18,5 +19,10 @@ public class MenuChanger : MonoBehaviour
         {
             menus[i].SetActive(menuID == i);
         }
+    }
+
+    public void DestroyPainKillerInjectionMenu()
+    {
+        painKillerInjectionLayoutMenu.SetActive(false);
     }
 }
