@@ -10,7 +10,7 @@ public class MenuChanger : MonoBehaviour
 
     private void Start()
     {
-        OpenMenu(2);
+        OpenMenu(3);
     }
 
     public void OpenMenu(int menuID)
