@@ -72,6 +72,11 @@ public class SutureNeedleZController : MonoBehaviour
     [Header("Feedback (opsiyonel)")]
     public FeedbackStitch feedbackStitch;              // dış sınıfın uyarılarını kullanıyorsan
 
+    [Header("Indicator Check")]
+    [SerializeField] private StitchIndicatorSequence indicatorSequence;
+    [Tooltip("'Close' eşiği (metre). Bu mesafenin ALTIndaysa 'close', üstündeyse 'far' kabul edilir.")]
+    [SerializeField] private float indicatorCloseThreshold = 0.006f; // 6 mm varsayılan
+
     [Header("Events")]
     public UnityEvent onStitchPlaced;      // başarılı place sonrası
     public UnityEvent onStitchRemoved;     // remove sonrası
@@ -328,6 +333,29 @@ public class SutureNeedleZController : MonoBehaviour
         // opsiyonel enjeksiyon kontrolü
         if (!FeedbackNeedle.IsNeedleInjected && feedbackStitch != null)
             feedbackStitch.StitchNoInjection();
+        // --- Indicator proximity evaluation (CLOSE/FAR) ---
+
+        // --- Indicator proximity evaluation (ONLY on-indicator → perfect) ---
+        if (indicatorSequence != null && feedbackStitch != null)
+        {
+            var activeGo = indicatorSequence.ActiveIndicator;
+            var indComp = activeGo ? activeGo.GetComponent<Indicator>() : null;
+            if (indComp != null && indComp.isOnIndicator)
+            {
+                if (!FeedbackNeedle.IsNeedleInjected)
+                {
+                    RemoveLastStitch();
+                    return;
+                }
+                feedbackStitch.StitchPerfect();
+                indicatorSequence.Next();
+            }
+            else
+            {
+                feedbackStitch.StitchFailed();
+                RemoveLastStitch();
+            }
+        }
 
         // aralık/uzaklık kontrolü (son komşuyla)
         Transform prev = _stitches.Count > 1 ? _stitches[_stitches.Count - 2] : null;
