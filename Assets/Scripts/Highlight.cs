@@ -1,38 +1,47 @@
 using UnityEngine;
-using System.Collections;
 
 public class Highlight : MonoBehaviour
 {
-    [SerializeField] private Color hitColor = Color.green; // temas rengi
-    [SerializeField] private float destroyDelay = 1f;      // yok olma süresi
+    [SerializeField] private Color hitColor = Color.green;
+    [SerializeField] private float holdDuration = 1f;
+    [SerializeField] private FinishCutting finishCutting;
 
     private Renderer rend;
     private Color originalColor;
+    private Color greenColor;
+    private float holdTimer = 0f;
+    private bool completed = false;
 
     void Start()
     {
         rend = GetComponent<Renderer>();
-        rend.material.color = Color.red;
         if (rend != null)
-            originalColor = rend.material.color;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log("trigger enter");
-        if (other.CompareTag("Scalpel"))
         {
-            if (rend != null)
-                rend.material.color = hitColor;
-
-            StartCoroutine(DestroyAfterDelay());
+            var color = Color.red;
+            color.a = 0.5f;
+            rend.material.color = color;
+            originalColor = color;
+            greenColor =  Color.green;
+            greenColor.a = 0.5f;
         }
     }
 
-    private IEnumerator DestroyAfterDelay()
+    private void OnTriggerStay(Collider other)
     {
-        yield return new WaitForSeconds(destroyDelay);
-        FindObjectOfType<FinishCutting>().CheckForFinish();
-        Destroy(gameObject);
+        if (completed) return;
+        if (other.CompareTag("Scalpel"))
+        {
+            // Accumulate time
+            holdTimer += Time.deltaTime;
+            rend.material.color = Color.Lerp(originalColor, greenColor, holdTimer / holdDuration);
+
+            // Check for completion
+            if (holdTimer >= holdDuration)
+            {
+                completed = true; // Prevent repeated triggers
+                finishCutting.CheckForFinish();
+                Destroy(gameObject);
+            }
+        }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class NeedleMouseController : MonoBehaviour
 {
@@ -38,6 +39,7 @@ public class NeedleMouseController : MonoBehaviour
     [SerializeField] private bool logOnceIfNoHit = true;
 
     public GameObject finishNeedleText;
+    public Button nextButton;
 
     // ---- internal ----
     private bool _pressing = false;       // aktif basma animasyonu var mı

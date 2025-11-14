@@ -9,8 +9,8 @@ EditorBuildSettings:
     path: Assets/Scenes/Menu.unity
     guid: de0c61f7e5960bf4f87ac4bf17d028b8
   - enabled: 1
-    path: Assets/Scenes/SurgerySimulation.unity
-    guid: 63ac76880c7c242fca77ff0e21a9d2ae
+    path: Assets/Scenes/Liver.unity
+    guid: 1f156af7d6a302148ae0961300d6d457
   - enabled: 1
     path: Assets/Scenes/SurgerySimulationStitch.unity
     guid: c7cef5e47ae1f6341838dc5c78f8a6a1
