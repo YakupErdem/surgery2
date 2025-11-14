@@ -11,45 +11,44 @@ public class Feedback : MonoBehaviour
     public bool isOnLiver, isOnHighlight;
     public GameObject feedbackTextDeep, feedbackTextHighlight;
     public Transform feedBackTextParent;
-    public float feedbackCooldown = 0.5f;
 
     public AudioSource audioSource;
     public AudioClip highlightSound;
     public AudioClip deepSound;
-    public float countdownBetweenFeedbacks = 0.5f;
     public float soundGap = 0.02f;
 
-    private bool canFeedBack = true;
     private readonly Queue<AudioClip> _soundQueue = new Queue<AudioClip>();
     private bool _isPlayingSounds = false;
     
+    // Track previous states to detect transitions
+    private bool wasTooDeep = false;
+    private bool wasOnHealthy = false;
+    
     private void Update()
     {
-        if(!isOnLiver || !canFeedBack) return;
-        if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
+        if(!isOnLiver) return;
+        
+        float scalpelY = scalpel.transform.position.y;
+        bool isTooDeep = scalpelY < maxDeepY;
+        bool isOnHealthy = !isOnHighlight && scalpelY < cutDeep;
+        
+        // Trigger feedback ONLY on state transition (entering bad state)
+        if (isTooDeep && !wasTooDeep)
+        {
+            var text = Instantiate(feedbackTextDeep, feedBackTextParent);
+            EnqueueSound(deepSound);
+            text.GetComponent<TMP_Text>().text = "Too DEEP!";
+        }
+        else if (isOnHealthy && !wasOnHealthy && !isTooDeep) // Don't double-trigger if also too deep
         {
             var text = Instantiate(feedbackTextHighlight, feedBackTextParent);
             EnqueueSound(highlightSound);
             text.GetComponent<TMP_Text>().text = "Don't cut healthy part!";
         }
-        if (scalpel.transform.position.y < maxDeepY)
-        {
-            var text = Instantiate(feedbackTextDeep, feedBackTextParent);
-            EnqueueSound(deepSound);
-            text.GetComponent<TMP_Text>().text = "Too DEEP!";
-            StartCoroutine(CoolDown());
-        }
-        else if (!isOnHighlight && scalpel.transform.position.y < cutDeep)
-        {
-            StartCoroutine(CoolDown());
-        }
-    }
-
-    private IEnumerator CoolDown()
-    {
-        canFeedBack  = false;
-        yield return new WaitForSeconds(countdownBetweenFeedbacks);
-        canFeedBack = true;
+        
+        // Update state tracking
+        wasTooDeep = isTooDeep;
+        wasOnHealthy = isOnHealthy;
     }
 
     private void EnqueueSound(AudioClip clip)
